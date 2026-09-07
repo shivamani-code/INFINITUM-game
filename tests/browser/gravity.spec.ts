@@ -1,0 +1,28 @@
+import { test, expect } from '@playwright/test';
+test('local gravity supports wall movement, jumping, ceiling and reset', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto('/'); await expect(page.locator('#play')).toBeEnabled(); await page.locator('#play').click();
+  await expect(page.locator('#hud')).toBeVisible();
+  await page.waitForFunction(() => (window as any).__game.input.locked);
+  await page.evaluate(() => { const g = (window as any).__game; g.director.load(2); g.player.teleport(g.player.position.clone().set(7.4, .86, -9)); });
+  await page.waitForTimeout(250); await page.keyboard.press('KeyE');
+  await expect.poll(() => page.evaluate(() => (window as any).__game.player.up.x)).toBe(-1);
+  await page.waitForTimeout(1200);
+  expect(await page.evaluate(() => (window as any).__game.player.grounded)).toBe(true);
+  const startY = await page.evaluate(() => (window as any).__game.player.position.y);
+  await page.keyboard.down('KeyD'); await page.waitForTimeout(1400); await page.keyboard.up('KeyD');
+  expect(await page.evaluate(() => (window as any).__game.player.position.y)).toBeGreaterThan(startY + 3);
+  await page.keyboard.press('Space'); await page.waitForTimeout(200);
+  expect(await page.evaluate(() => (window as any).__game.player.position.x)).toBeLessThan(8.3);
+  await page.waitForTimeout(1100);
+  await page.screenshot({ path: 'test-results/gravity-wall.png' });
+  await page.evaluate(() => { const g = (window as any).__game; g.player.teleport(g.player.position.clone().set(8.64, 18.5, -27), g.player.up.clone().set(-1, 0, 0)); });
+  await page.waitForTimeout(200); await page.keyboard.press('KeyE');
+  await expect.poll(() => page.evaluate(() => (window as any).__game.player.up.y)).toBe(-1);
+  await page.waitForTimeout(1300);
+  expect(await page.evaluate(() => (window as any).__game.player.grounded)).toBe(true);
+  await page.screenshot({ path: 'test-results/gravity-ceiling.png' });
+  await page.keyboard.press('KeyR'); await page.waitForTimeout(250);
+  expect(await page.evaluate(() => (window as any).__game.player.up.y)).toBe(1);
+  expect(errors).toEqual([]);
+});

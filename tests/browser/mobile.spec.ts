@@ -1,0 +1,37 @@
+import { test, expect } from '@playwright/test';
+test('mobile touch movement, look, Echo actions, pause and orientation',async({browser})=>{
+  const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:3,isMobile:true,hasTouch:true});
+  const page=await context.newPage();const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('http://127.0.0.1:5173/');await expect(page.locator('#play')).toBeEnabled();await page.locator('#play').tap();
+  await expect(page.locator('#touch-controls')).toBeVisible();
+  expect(await page.evaluate(()=>(window as any).__game.render.tier)).toBe('mobile');
+  expect(await page.evaluate(()=>(window as any).__game.render.gl.getPixelRatio())).toBeLessThanOrEqual(1);
+  const session=await context.newCDPSession(page),box=(await page.locator('#touch-move').boundingBox())!;
+  const point={x:box.x+box.width/2,y:box.y+box.height/2-36,id:1};
+  const before=await page.evaluate(()=>(window as any).__game.player.position.z);
+  await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point,{x:300,y:300,id:2}]});
+  await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[point,{x:350,y:310,id:2}]});
+  await page.waitForTimeout(600);await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  expect(await page.evaluate(()=>(window as any).__game.player.position.z)).toBeLessThan(before-1);
+  expect(Math.abs(await page.evaluate(()=>(window as any).__game.player.yaw))).toBeGreaterThan(.05);
+  expect(await page.evaluate(()=>(window as any).__game.input.moveY)).toBe(0);
+  await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});
+  await session.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
+  expect(await page.evaluate(()=>(window as any).__game.input.moveY)).toBe(0);
+  await page.evaluate(()=>(window as any).__game.director.load(3));
+  await page.locator('[data-key="KeyQ"]').tap();await expect.poll(()=>page.evaluate(()=>(window as any).__game.director.level.echo.recording)).toBe(true);
+  await page.locator('[data-key="KeyR"]').tap();await expect.poll(()=>page.evaluate(()=>(window as any).__game.director.level.echo.echoes.length)).toBe(1);
+  await page.evaluate(()=>(window as any).__game.director.load(1));await page.screenshot({path:'artifacts/mobile-portrait.png'});
+  await page.setViewportSize({width:844,height:390});await page.waitForTimeout(400);
+  for(const button of await page.locator('.touch-actions button,#touch-pause').all()) {const b=(await button.boundingBox())!;expect(b.x).toBeGreaterThanOrEqual(0);expect(b.x+b.width).toBeLessThanOrEqual(844);expect(b.y+b.height).toBeLessThanOrEqual(390);expect(b.height).toBeGreaterThanOrEqual(44);}
+  await page.screenshot({path:'artifacts/mobile-landscape.png'});
+  await page.locator('#touch-pause').tap();await expect(page.locator('#menu')).toBeVisible();
+  await page.locator('#settings-button').tap();await expect(page.locator('#quality')).toBeVisible();await page.screenshot({path:'artifacts/mobile-settings.png'});
+  await page.locator('#quality').selectOption('balanced');
+  expect(await page.evaluate(()=>(window as any).__game.render.tier)).toBe('balanced');
+  await page.reload();await expect(page.locator('#play')).toBeEnabled();
+  expect(await page.evaluate(()=>(window as any).__game.render.tier)).toBe('balanced');
+  await page.locator('#settings-button').tap();await page.locator('#quality').selectOption('auto');
+  expect(await page.evaluate(()=>(window as any).__game.render.tier)).toBe('mobile');
+  expect(errors).toEqual([]);await context.close();
+});

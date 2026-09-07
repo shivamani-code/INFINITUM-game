@@ -1,0 +1,927 @@
+PROJECT DOCUMENTATION / VERSION 1.0 / SEPTEMBER 2026
+INFINITUM:THE LAST SCALE
+Complete Game Design, Narrative, Art, Technical Architecture, Production & Astra Build Bible
+
+THE ONE-SENTENCE PITCHA short first-person 3D mind-bender where the player enters a forbidden miniature world, learns to rewrite scale, gravity and causality, then discovers that every “smaller” world was actually part of something vastly larger.
+
+Designed as a 15–30 minute premium-feeling browser experience that prioritizes unforgettable visual transitions, tactile mechanics, mystery, and a complete ending over map size or content volume.
+Target
+Decision
+Primary platform
+Desktop browser; keyboard + mouse; WebGPU where available with WebGL 2 fallback.
+Technology
+TypeScript + Three.js + Vite + Rapier + Web Audio.
+Core promise
+Every 2–4 minutes the player encounters a new “I did not know a browser could do that” moment.
+Scope philosophy
+One transforming megaspace, three core reality mechanics, three puzzle clusters, one cinematic finale.
+Target playtime
+15–30 minutes first completion; optional secrets can extend it.
+Production strategy
+Vertical slice first. Do not build a content-heavy open world.
+
+This document is intentionally opinionated. It defines what to build, what not to build, how the systems fit together, what “finished” means, and how to spend limited high-end coding-agent usage on the highest-leverage work.
+Document map
+1. Product vision and non-negotiable pillars
+2. Audience, platform, session and success criteria
+3. Player experience arc and complete beat-by-beat walkthrough
+4. Narrative, world rules and reveal structure
+5. Core mechanic specification: Perspective Scale
+6. Core mechanic specification: Gravity Reorientation
+7. Core mechanic specification: Echo / Temporal Self
+8. Puzzle language, onboarding and difficulty curve
+9. World / level design: the Transforming Megaspace
+10. Art direction and visual identity
+11. Rendering, lighting, materials, shaders and post-processing
+12. Cinematics, camera language and spectacle choreography
+13. Audio, music and haptics-equivalent feedback
+14. Controls, movement feel, interaction and accessibility
+15. UI / UX, menus, checkpoints and player guidance
+16. Technical architecture and repository structure
+17. Simulation, physics, timeline and world-state architecture
+18. Asset pipeline, procedural content and content authoring
+19. Performance budgets and browser compatibility
+20. Testing, telemetry, QA and failure recovery
+21. Production scope, milestones and Definition of Done
+22. Astra / Codex execution strategy and prompt pack
+23. Risk register and fallback designs
+24. Deployment, release checklist and post-launch options
+Appendices: data schemas, naming conventions, debug commands, content checklist, source notes
+READ THIS FIRSTThe biggest project risk is not technical difficulty; it is scope explosion. The experience should feel huge while the implementation stays compact. Reuse one environment, transform it aggressively, and make transitions carry the spectacle.
+
+1. Product vision and non-negotiable pillars
+INFINITUM is not an “open play and go” sandbox. It is a deliberately paced, authored experience with a mystery, escalating mechanics, changing objectives, failure/recovery states and a final payoff. The player should always understand that they are moving toward an answer, even when they do not yet understand the world.
+1.1 The player fantasy
+The fantasy is: “I am learning to break the rules of reality faster than the world can contain me.” The player begins powerless and curious. By the end, they can manipulate perspective, gravity and their own past actions to perform combinations that looked impossible at the start.
+1.2 Five design pillars
+Pillar
+Meaning in production
+Reject when…
+Wonder before size
+A single room may transform three times rather than building three separate levels.
+A feature adds area but no new feeling.
+Mechanics create spectacle
+Visual transformations should usually be caused by player actions.
+A cinematic could happen identically without the player.
+Readable impossibility
+The world can be surreal, but the player must understand the current rule.
+The puzzle is solved by random experimentation.
+Escalation without bloat
+Reuse mechanics in new combinations instead of adding endless systems.
+A fourth major mechanic appears before the first three are mastered.
+A complete ending
+The project ships with a real reveal and credits.
+The build ends because development time ran out.
+
+1.3 What this game is NOT
+Not an open-world survival game.
+Not a combat-first shooter.
+Not a photoreal asset showcase with weak interaction.
+Not a procedural “infinite universe” generator.
+Not a walking simulator where the only verb is movement.
+Not a 5-hour game compressed into a browser.
+Not a demo reel of unrelated shader tricks.
+1.4 Emotional target
+Phase
+Desired emotion
+Player thought
+Opening
+Curiosity + unease
+Why am I being told not to enter this thing?
+First transition
+Disbelief
+Wait, that tiny city is full scale?
+First mechanic mastery
+Agency
+I can use this rule.
+Midgame
+Confidence + tension
+I know the rules, but the world is fighting back.
+Finale
+Overload + clarity
+All of this was connected.
+Ending
+Afterthought / discussion
+What was the “real” scale?
+
+2. Audience, platform, session and success criteria
+2.1 Audience
+Primary: players who share visually surprising indie games, puzzle experiences, short horror/surreal experiences, Three.js/WebGL experiments and “play this without context” links. Secondary: technically curious players who enjoy breaking systems and speedrunning compact puzzle games.
+2.2 Session assumptions
+First-time completion: target 15–30 minutes.
+No account required.
+Load-to-control target: as fast as practical; show progress and allow audio choice before pointer lock.
+Checkpoint recovery should return a failed or disconnected player to the current puzzle cluster, not the beginning.
+Designed first for desktop Chromium-class browsers. Wider compatibility is a shipping consideration, not a reason to reduce the visual identity.
+2.3 Success metrics
+Metric
+Target / interpretation
+First-minute retention
+The opening must create a mystery and an interaction quickly; no long exposition.
+Completion rate
+High enough that most engaged players reach the reveal; puzzles should challenge, not strand.
+Shareability
+At least 3 moments should work as 10–20 second clips with no explanation.
+Performance
+Consistent, stable frame pacing matters more than maximum visual settings.
+Bug tolerance
+No progression blocker in the golden path. Every puzzle has a safe reset.
+Identity
+A screenshot should not look like a default Three.js or generic cyberpunk demo.
+
+2.4 Minimum viable “mind-blow” checklist
+A seamless scale transition that changes the perceived size of the world without a visible loading cut.
+A gravity transition where architecture becomes traversable in a new orientation.
+A temporal Echo that visibly repeats a prior player action and becomes mechanically useful.
+A combined puzzle using all three mechanics.
+A final environment collapse/reveal that changes the interpretation of earlier scenes.
+3. Player experience arc and complete beat-by-beat walkthrough
+The target build is organized as one transforming megaspace. The player experiences “chapters,” but the implementation reuses geometry, lighting rigs, portals and transform groups whenever possible.
+Time
+Beat
+Player action
+Technical / visual payoff
+0:00–1:30
+The White Chamber
+Wake, move, inspect a glass sphere. A wall message says “DO NOT ENTER THE SPHERE.”
+Immediate high-quality movement, spatial audio, impossible scale clues.
+1:30–3:00
+The First Crossing
+Approach the sphere; camera and world scale smoothly invert until the player is inside the miniature city.
+Signature seamless transition; no loading screen.
+3:00–7:00
+Rule I: Scale
+Learn to lock perspective and resize a bridge/object to fit a new spatial relationship.
+First empowering mechanic; controlled visual distortion.
+7:00–11:00
+Rule II: Gravity
+Activate gravity anchors; walls become floors; city blocks rotate around the player.
+Architectural transformation + traversal.
+11:00–15:00
+Rule III: Echo
+Reset a short local timeline. Prior self repeats actions and holds a plate/lever.
+Player collaborates with past self.
+15:00–20:00
+The Curator Notices
+The world starts counteracting the player. Text changes, doors move, safe assumptions fail.
+Narrative escalation through systems, not cutscenes.
+20:00–25:00
+The Impossible Lock
+Use scale + gravity + Echo in one authored puzzle while the megaspace destabilizes.
+Mechanical synthesis.
+25:00–28:00
+Collapse
+World folds inward, stars become manipulable points, old spaces appear at impossible scale.
+Maximum spectacle with controlled movement.
+28:00–30:00
+The Last Scale
+Reveal shelves/spheres/eye or laboratory-scale interpretation; one final interactive choice; cut to black.
+Narrative payoff + replay discussion.
+
+3.1 Golden path objectives
+Reach the sphere.
+Enter the city.
+Restore the first bridge using perspective scale.
+Rotate the district using two gravity anchors.
+Create an Echo and open the temporal gate.
+Escape the Curator’s correction sequence.
+Solve the three-rule lock.
+Reach the final sphere / boundary.
+Trigger the Last Scale reveal.
+3.2 Optional secrets
+Secrets should deepen interpretation without adding required systems. Examples: hidden messages that only appear in reflections; an Echo that can be observed before the mechanic is introduced; a tiny replica of the opening room; a second ending line if the player refuses the final interaction for a defined period. Keep secrets cheap: transform existing content, do not build extra levels.
+4. Narrative, world rules and reveal structure
+4.1 Premise
+The player awakens in a sterile, almost sacred chamber containing one impossible object: a transparent sphere with a living city inside it. The only explicit instruction is not to enter. The prohibition creates immediate purpose: the sphere is the obvious objective and the first act of disobedience defines the player’s relationship with the world.
+4.2 The Curator
+The Curator is not introduced as a humanoid boss. It is the organizing intelligence that keeps scales, timelines and frames of reference separated. Early evidence appears as environmental corrections: a door moves after being solved, a line of text rewrites itself, a gravity anchor turns away, an Echo is erased. Only near the end does the player understand that the environment itself has been the antagonist.
+4.3 World rules
+Rule
+Player-facing interpretation
+Story interpretation
+Observed scale can become physical scale
+Align, lock, transform.
+The world does not privilege one frame of reference.
+Gravity is local, not universal
+Choose which surface becomes “down.”
+The Curator maintains orientation boundaries.
+Recent action can persist as an Echo
+Reset locally and cooperate with yourself.
+Timeline separation is breaking.
+Corrections intensify after rule-breaking
+The world reacts to mastery.
+The Curator is aware of the anomaly.
+
+4.4 Reveal options
+RECOMMENDED CANONThe player believes they are traveling into smaller nested worlds. In the ending, the camera reframes the entire journey and reveals that “inside” and “outside” were perspective assumptions. The worlds are arranged as experimental containers / structures within a much larger conscious system. Do not over-explain whether the final image is literal, simulated or biological.
+
+Keep the final explanation intentionally incomplete. The goal is a clear reversal (“our interpretation of scale was wrong”) without a lore dump. One strong line is worth more than five minutes of exposition.
+4.5 Environmental writing
+“DO NOT ENTER THE SPHERE.”
+“SCALE IS A PRIVILEGE OF THE OBSERVER.”
+“YOU ARE NOT DESCENDING.”
+“THE COPY REMEMBERS YOU.”
+“CORRECTION IN PROGRESS.”
+“THERE IS NO OUTSIDE.”
+5. Core mechanic specification: Perspective Scale
+5.1 Player rule
+If an object visually aligns with a target frame from the player’s camera, the player can lock that perceived relationship. The game then changes the object’s physical scale and/or placement so the relationship becomes real.
+5.2 Interaction model
+Aim at an eligible object. It receives a subtle silhouette/reticle response.
+Hold the Manipulate input to “capture” the object in perspective space.
+Move/look until the object overlaps a compatible frame or anchor.
+When alignment is valid, show a calm confirmation cue — not a giant UI prompt.
+Release/confirm. Animate scale/position transformation over 200–500 ms with sound and temporal distortion.
+5.3 Implementation strategy
+Do not attempt arbitrary world-scale ray-magic for every mesh. Use authored ScaleAnchors and ScaleTargets. The camera defines a ray/frustum relationship; eligible objects have bounded scale ranges and permitted target sockets. The system calculates the desired apparent angular size or screen-space fit, then resolves a safe world transform and asks physics to validate the destination.
+Component
+Responsibility
+ScaleManipulationSystem
+Owns selection, capture, validation, transform interpolation.
+ScaleableComponent
+Object metadata: min/max scale, pivot, collider regeneration mode, allowed anchors.
+ScaleAnchor
+Defines compatible target plane/volume and completion rule.
+ScreenSpaceMatcher
+Measures projected bounds / alignment tolerances.
+PhysicsRebuilder
+Updates collider safely after a completed scale change.
+ScaleVFX
+Chromatic/frustum ripple, sound, object edge treatment.
+
+5.4 Safety constraints
+Never allow scaling to zero, negative scale, or collider sizes outside tested ranges.
+Freeze or switch rigid bodies to kinematic during the short transformation.
+Validate occupancy before committing a destination.
+If the final transform intersects critical geometry, reject with readable feedback.
+Puzzle-critical objects have a one-button local reset.
+5.5 Showcase puzzle
+A monumental bridge is visible kilometers away through a narrow doorway. The player captures it when it appears small, aligns it inside a socket near the door, and releases. The “distant” bridge becomes a carryable architectural piece. Later the same rule is reversed: a small object is expanded until it becomes a traversal surface.
+6. Core mechanic specification: Gravity Reorientation
+6.1 Player rule
+Gravity belongs to the current local frame, not to the entire universe. Activated Gravity Anchors define a new up/down vector. The player, selected dynamic objects and specific world groups transition smoothly into the new frame.
+6.2 Feel goals
+The camera should preserve player comfort: rotate with easing and keep a stable horizon during most traversal.
+The world can rotate more dramatically than the camera.
+Transitions should feel deliberate, heavy and spatial — not like the player camera suddenly rolls 90 degrees.
+Use audio low-frequency movement and environmental particles to sell the new down direction.
+6.3 Technical design
+Rapier’s character controller supports a configurable up vector, which is useful for local gravity traversal. The game still owns gravity acceleration and camera orientation. Treat player locomotion, physics gravity and visual-world rotation as related but separate concerns so authored sequences can choose the safest representation.
+Mode
+Use when
+Implementation
+Player-relative gravity
+Walking on walls/ceilings.
+Set controller up vector; project movement onto local tangent plane; apply gravity along -up.
+World-group rotation
+Huge cinematic district transformation.
+Rotate a parent transform group while temporarily controlling affected bodies.
+Hybrid
+Puzzle needs physical objects to follow new gravity.
+Update physics gravity or per-body forces after world transform is stable.
+
+6.4 Showcase puzzle
+The player enters a vertical canyon between skyscrapers. An anchor rotates gravity toward one building facade. That wall becomes the street. A second anchor makes the former sky a traversable plaza. The same geometry becomes three different paths without building three separate levels.
+7. Core mechanic specification: Echo / Temporal Self
+7.1 Player rule
+Within defined Temporal Zones, the player can reset a short local sequence. The previous attempt becomes an Echo that repeats recorded movement and important actions while the current player begins again. The Echo is not initially AI; it is a deterministic playback system.
+7.2 Why zones, not global time travel
+Limiting Echo recording to authored zones keeps memory, physics state, puzzle resets and debugging manageable. It also makes the mechanic readable: entering a zone communicates “this room can be solved across attempts.”
+7.3 Recording model
+Data stream
+Recommended representation
+Player transform
+Fixed-tick position + orientation snapshots, compressed / reduced where safe; interpolate at playback.
+Locomotion state
+Grounded, jump, crouch if used; event flags.
+Interactions
+Timestamped semantic events referencing stable entity IDs.
+Manipulation
+Begin/end + target IDs + necessary parameters rather than raw every-frame object state.
+Puzzle events
+Zone-local event log.
+Camera
+Record only if needed for an Echo visual; gameplay Echo can use body/head orientation.
+
+7.4 Fixed simulation
+Run gameplay recording and physics on a fixed simulation step. Rendering interpolates between states. This prevents recording density from changing with frame rate and makes Echo timing predictable. Avoid storing an entire world snapshot every render frame.
+7.5 Echo visual language
+Semi-transparent but not cliché hologram blue. Use a refractive/temporal edge treatment tied to the project’s material language.
+Echo footsteps are filtered and slightly time-stretched.
+Interaction points leave a very short-lived temporal imprint.
+When multiple Echoes overlap, prioritize silhouettes and depth readability over bloom.
+7.6 Failure handling
+Cap simultaneous Echoes per zone (initially 3–5).
+Provide Clear Echoes / Reset Zone in pause or diegetic control.
+If an Echo cannot complete a recorded interaction because state diverged, it should fail visibly and continue its path rather than hard-lock the game.
+Puzzle completion commits the zone and discards unnecessary recordings.
+8. Puzzle language, onboarding and difficulty curve
+8.1 Teaching pattern
+Every rule follows: demonstrate → isolate → require → twist → combine. Never introduce a mechanic through text alone. The environment should show an impossible outcome, then give the player control over the rule that caused it.
+Mechanic
+Demonstrate
+Isolate
+Twist
+Combine
+Scale
+A distant object visibly changes relative size during the sphere transition.
+Resize one bridge piece.
+Expand a tiny object into architecture.
+Scale an object while an Echo holds alignment.
+Gravity
+Loose particles fall sideways before the player can control it.
+Rotate one room.
+Only selected world groups obey the new frame.
+Echo remains on old orientation long enough to operate a switch.
+Echo
+A ghost of the player is glimpsed behind glass.
+One plate + one Echo.
+Echo interaction can be disrupted by correction.
+Echo performs setup while current player uses gravity + scale.
+
+8.2 The three-rule final lock
+Recommended sequence: create Echo A to hold an orientation stabilizer; reset. Current player changes gravity and reaches a perspective balcony; from that frame, shrink a monumental key into a movable object; place it into a socket while Echo A maintains the field. A Curator correction then partially rotates the structure, forcing a final timed traversal using the same established rules — no new mechanic.
+8.3 Hint system
+Do not use a chatty tutorial character. Use layered hints: first visual emphasis, then environmental movement, then a compact optional text hint after a defined inactivity period. Hints must state the relevant rule, not the solution path.
+9. World / level design: the Transforming Megaspace
+9.1 Level topology
+Build one “world spine” with reusable hubs and transformation states. The player believes they are crossing radically different places, but production reuses the same authored geometry under scale changes, rotations, visibility layers, portals and material states.
+Space
+Purpose
+Reuse strategy
+White Chamber
+Opening, tutorial movement, final visual callback.
+Reappears at extreme scale near ending.
+Sphere Threshold
+Signature scale transition.
+Portal / camera rig reused for final crossing.
+Vertical City
+Scale onboarding + primary vista.
+Rotated/reframed during gravity chapter.
+Gravity Canyon
+Movement mastery.
+Same city blocks, different hierarchy and collision mode.
+Temporal Vault
+Echo onboarding.
+Compact sealed zone, easy to reset deterministically.
+Correction Spine
+Narrative escalation.
+Transforms prior corridors; cheap “world is changing” effect.
+Impossible Lock
+Combined-mechanic climax.
+Assembles systems already built.
+Last Scale
+Final reveal space.
+Mostly camera, procedural instances, transformed opening assets.
+
+9.2 Environmental navigation
+Use one dominant landmark visible through most chapters. Its apparent scale/orientation changes, proving progress.
+Use light temperature/contrast zones instead of signage where possible.
+Doors and portals should have strong silhouettes.
+Avoid huge empty distances unless traversal itself is the spectacle.
+After a major transformation, briefly reveal the player’s destination before returning control.
+9.3 Asset economy
+A small library of excellent modular pieces beats a large generic asset pack: slabs, ribs, monoliths, frames, bridges, glass volumes, cable/rail elements, one or two hero sculptures, procedural city towers, and a few physically based surface families. The world identity comes from scale, composition, lighting and transformation.
+10. Art direction and visual identity
+10.1 Visual thesis
+“Monumental precision being invaded by impossible physics.” The world begins clean, controlled and almost sacred. As the player breaks rules, the same forms become fractured, refracted and temporally misaligned.
+10.2 Palette strategy
+Use a restrained base: near-white architectural surfaces, deep graphite voids, metallic neutrals and one evolving spectral accent for reality manipulation. Avoid constant rainbow neon. Color gains meaning when it is rare.
+10.3 Shape language
+Family
+Shape language
+Meaning
+Curator architecture
+Perfect frames, circles, axial symmetry, repeated ribs.
+Order / containment.
+Player-caused anomalies
+Sheared planes, non-Euclidean overlaps, temporal duplicates.
+Broken frame of reference.
+Scale anchors
+Nested rectangles/circles with screen-space-readable silhouette.
+Perspective relationship.
+Gravity anchors
+Massive directional forms / suspended rings.
+Orientation.
+Echo zones
+Layered translucent planes, repeated time marks.
+Causality.
+
+10.4 “Expensive-looking” browser graphics
+Strong composition and light direction before post-processing.
+High-quality normal/roughness response on a limited material set.
+Large-scale fog/atmosphere that hides LOD transitions and creates depth.
+Careful shadow budget: hero lights only.
+Instancing for repeated city geometry.
+Procedural micro-detail in shaders instead of enormous texture sets.
+Reflections selectively: planar/cube/reflection probes or screen-space techniques only where they materially sell the scene.
+Temporal transitions with geometry/material state, not only screen-space glitch effects.
+10.5 Things to avoid
+Default Unreal-style blue/orange cinematic grade.
+Bloom on every emissive surface.
+Tiny noisy props that destroy monumental scale.
+Generic cyberpunk signage.
+Excessive film grain/chromatic aberration during normal play.
+Full-screen glitch spam as a substitute for actual world transformation.
+11. Rendering, lighting, materials, shaders and post-processing
+11.1 Renderer choice
+Recommended architecture: evaluate Three.js WebGPURenderer early because it can use WebGPU and automatically fall back to a WebGL 2 backend. It also aligns with Three.js’s newer TSL/node-material and post-processing direction. However, WebGPURenderer is still described by Three.js as experimental, so keep a renderer abstraction and validate every required effect on the target browser set before depending on it.
+COMPATIBILITY NOTEWebGPU itself is still not universally available across all major browser/device combinations and requires a secure context. Ship with tested fallback behavior and a visible compatibility path rather than assuming every player has WebGPU.
+
+11.2 Recommended render stack
+Layer
+Purpose
+Budget philosophy
+HDR / tone mapping
+Preserve bright highlights and monumental contrast.
+One consistent color pipeline.
+Atmospheric fog
+Depth, scale, LOD masking.
+Prefer cheap analytic/height fog; volumetric approximation for hero moments.
+AO / contact shading
+Ground architecture.
+Moderate resolution; temporal stability > maximum radius.
+Bloom
+Selective energy / anomaly emphasis.
+Subtle during normal play; stronger only in transitions.
+DoF
+Cinematic beats / scale cues.
+Avoid during gameplay unless controlled.
+Motion / temporal distortion
+Reality transitions.
+Event-driven, short duration.
+Color grade
+Chapter state and narrative correction.
+Small changes to preserve visual consistency.
+
+11.3 TSL / custom shader priorities
+Echo material: depth-readable temporal surface with edge phase offset.
+Scale-lock shader: world-space/object-space patterns that visually stretch as perspective is committed.
+Curator correction: geometry/material phase transition using masks, not just screen noise.
+Sky/void: procedural stars, scale-dependent parallax and controlled gravitational distortion.
+Surface detail: triplanar/procedural breakup for huge architecture to avoid obvious texel scale.
+11.4 Lighting strategy
+Prefer a few authored lighting states rather than many dynamic lights. Use environment lighting, directional/area-like hero sources, emissive architecture and baked/lightmapped contributions where practical. Every chapter transition can crossfade light rigs and material parameters to make reused geometry feel new.
+11.5 Render quality tiers
+Tier
+Behavior
+Ultra
+WebGPU where validated, highest internal resolution, hero AO/reflection/effects enabled.
+High
+Default target; strong shadows, normal post stack, dynamic resolution available.
+Medium
+Reduced shadow map sizes, reduced AO/effect quality, less reflection work.
+Low / Safe
+WebGL 2 fallback path, simplified materials, conservative post-processing; preserve mechanics and art direction.
+
+12. Cinematics, camera language and spectacle choreography
+12.1 Rule: never steal control for too long
+The strongest spectacle happens while the player is still participating. Use short guided camera influence, temporary movement limits or authored look targets rather than long non-interactive movies.
+12.2 Signature moments
+Moment
+Choreography
+Sphere crossing
+Object fills view; depth cues invert; room geometry appears to recede into the sphere; audio bandwidth narrows then explodes open in city scale.
+First gravity shift
+Particles change direction first; distant towers begin rotating; player surface stays stable briefly; camera follows only as locomotion frame changes.
+First Echo reveal
+Player resets; silence; old self enters view exactly where the player had been. Avoid explanatory text for several seconds.
+Correction event
+Solved architecture politely “unsolves” itself, then violently reforms when player resists.
+Final collapse
+Reuse all previous locations as giant/minuscule fragments in one continuous spatial pullback.
+
+12.3 Camera comfort
+Default FOV should feel modern but not fisheye; allow user adjustment.
+Avoid sudden forced roll in first person.
+Reduce head bob; use acceleration, landing and subtle camera impulse for weight.
+For huge scale transitions, animate world/camera relationship with stable focal anchors to reduce motion sickness.
+Provide a Reduced Camera Motion option that removes/shortens roll, shake and aggressive FOV changes.
+13. Audio, music and haptics-equivalent feedback
+13.1 Audio identity
+The soundscape should communicate scale before the player understands it visually. Use long architectural reverberation, low-frequency structures, distant mechanical resonance, filtered transient detail and near-silence before major transformations.
+13.2 System layers
+Layer
+Examples
+Player
+Footsteps by material, jump/land, cloth/breath only if subtle.
+Environment
+Wind shear, distant resonance, structural groans, city-scale mechanical tones.
+Mechanics
+Distinct sonic grammar for scale, gravity and Echo so players can understand state without UI.
+Curator
+Clean tonal motifs that become detuned/corrupted as control is lost.
+Music
+Adaptive stems; sparse opening, pulse during correction, full harmonic convergence in finale.
+
+13.3 Web Audio approach
+Use Web Audio for spatialization, filters, buses and procedural layers. Require a clear user gesture before audio starts. Keep a master compressor/limiter conservative; prioritize headroom because layered finale effects can clip quickly.
+13.4 No-controller “haptics”
+On keyboard/mouse, perceived impact comes from synchronized audio transient, camera impulse, animation easing, screen-space response and environmental secondary motion. Treat these as one feedback event authored through a central FeedbackSystem.
+14. Controls, movement feel, interaction and accessibility
+14.1 Default controls
+Input
+Action
+WASD
+Move
+Mouse
+Look
+Space
+Jump
+E / Left Click
+Interact / confirm contextual action
+Right Click or Q
+Capture / manipulate perspective object
+R
+Reset current temporal zone when Echo mechanic is active
+Esc
+Pause / release pointer lock
+
+14.2 Movement target
+The controller should feel premium before any puzzle exists. Use tuned acceleration/deceleration, coyote time if jumping requires precision, grounded slope handling, snap-to-ground where appropriate, predictable stair behavior and consistent local-up calculations after gravity changes. Rapier’s kinematic character controller can provide obstacle sliding, slopes, stairs and moving-platform support, but movement feel remains game-specific and should be wrapped behind a PlayerMotor abstraction.
+14.3 Accessibility / comfort
+FOV slider.
+Mouse sensitivity + invert Y.
+Reduced camera motion.
+Bloom/flash reduction.
+Master/music/effects volume.
+Subtitles / text cues for key narrative audio if any spoken material is added.
+High-contrast interaction outline option.
+Hold vs toggle for manipulation.
+Puzzle hint timer: Off / Late / Normal.
+Performance preset and dynamic resolution option.
+15. UI / UX, menus, checkpoints and player guidance
+15.1 UI philosophy
+The world should carry most information. Keep the HUD nearly empty. A small reticle, contextual interaction cue, temporary mechanic state indicator and optional performance/debug overlay are enough.
+15.2 Screens
+Screen
+Required content
+Boot
+Logo/title, load progress, audio start interaction, compatibility status if needed.
+Main menu
+Play, Settings, Credits; Continue only if a checkpoint exists.
+Pause
+Resume, Restart Checkpoint, Settings, Quit to Menu.
+Settings
+Graphics, Controls, Audio, Accessibility.
+Ending
+Minimal credits; restart / replay option after reveal settles.
+
+15.3 Checkpoint model
+Checkpoint at chapter boundaries and before the final combined puzzle. Save only stable high-level state: chapter ID, puzzle completion flags, settings and optional secrets. Do not serialize the entire physics scene. On restore, rebuild the authored chapter state deterministically.
+15.4 Error recovery
+Every puzzle room has a local reset.
+Detect player falling outside valid bounds and restore to last safe transform.
+If WebGPU initialization fails, retry/fallback gracefully.
+If audio initialization fails, continue silently with a visible settings note.
+If a checkpoint schema changes between builds, migrate or safely reset progression rather than crashing.
+16. Technical architecture and repository structure
+16.1 Architecture principles
+Systems communicate through explicit interfaces/events, not global mutable state.
+Rendering objects are not the source of truth for gameplay state.
+Physics, gameplay simulation and rendering have clear update phases.
+Every entity that participates in recording/puzzles gets a stable ID.
+Major mechanic code is independent enough to test in a sandbox scene.
+Debug visualization is a first-class feature, not an afterthought.
+16.2 Recommended repository
+Suggested structure:
+src/  app/              boot, game lifecycle, configuration  core/             clock, events, math, IDs, resource lifetime  render/           renderer abstraction, post FX, materials, lighting  physics/          Rapier world, queries, body/collider adapters  input/            keyboard, mouse, bindings, pointer lock  player/           motor, camera rig, interaction  world/            scene graph, chapters, checkpoints, triggers  mechanics/    scale/    gravity/    echo/  timeline/         fixed-tick recorder, playback, event tracks  puzzle/           puzzle state machines, sockets, plates, doors  audio/            buses, spatial emitters, adaptive music  ui/               menus, HUD, settings, hints  vfx/              feedback events, particles, transitions  debug/            stats, gizmos, dev commands  data/             schemas and authored chapter dataassets/  models/ textures/ audio/ fonts/public/tests/
+16.3 Main update loop
+Phase
+Responsibility
+Input sample
+Capture current controls; do not mutate world yet.
+Fixed simulation tick
+Gameplay state machines, player motor, physics step, timeline record/playback, puzzle events.
+Post-sim
+Resolve triggers, checkpoint conditions, queued world transitions.
+Render interpolation
+Interpolate transforms, update camera/VFX/materials.
+Render
+Submit frame; update adaptive quality metrics outside hot path.
+
+16.4 Event design
+Use semantic events such as InteractionStarted(entityId), GravityChanged(anchorId, up), ScaleCommitted(entityId, anchorId, transform), EchoReset(zoneId), PuzzleSolved(puzzleId). Timeline recording can serialize selected semantic events without coupling itself to every mechanic implementation.
+17. Simulation, physics, timeline and world-state architecture
+17.1 Physics
+Rapier is a WebAssembly physics engine available for JavaScript. Initialize it asynchronously during boot. Use fixed rigid bodies for level collision, dynamic bodies sparingly for hero interactions, and position/velocity kinematic bodies for controlled moving geometry. Keep render and physics transforms synchronized through adapters rather than mixing direct writes throughout the codebase.
+17.2 Character
+Use a capsule collider. The player motor asks the character controller for corrected movement and owns jump/gravity. Collision events feed footsteps, impacts and interaction logic. For changing gravity, treat local up as explicit player state and update movement basis consistently.
+17.3 World state
+State category
+Persistence
+Chapter progression
+Checkpoint save.
+Puzzle flags
+Checkpoint save if chapter-stable.
+Transient body transforms
+Do not persist globally; rebuild from authored state.
+Echo recordings
+Zone-local runtime only unless a puzzle specifically requires checkpointing them.
+Settings
+Persist locally.
+Secrets
+Persist as small IDs/booleans.
+
+17.4 Determinism expectations
+Do not promise full deterministic physics replay across browsers. Echoes should be deterministic enough at the gameplay layer because their body path can be driven by recorded/interpolated transforms and semantic interaction events. Puzzle-critical interactions should be tolerant of small divergence.
+18. Asset pipeline, procedural content and content authoring
+18.1 Asset principles
+Prefer glTF/GLB for authored 3D assets.
+Batch/instance repeated architecture.
+Atlas or reuse textures where it reduces draw calls without visibly harming hero surfaces.
+Use KTX2/Basis-style compressed textures where pipeline support is stable.
+Use Draco or Meshopt only after profiling load size/CPU tradeoffs.
+Keep source assets outside the runtime tree; export optimized game-ready files.
+18.2 Procedural content
+Procedural generation is a production tool, not the game structure. Good uses: tower variations, windows, cables, star fields, floating fragments, instanced debris and controlled architectural repetition. Bad use: generating the critical puzzle path or replacing authored composition.
+18.3 Content data
+Author chapter/puzzle settings as typed data instead of hardcoding values throughout scene scripts. A ChapterDefinition can reference spawn point, lighting state, active world groups, objective text, checkpoint ID and transition sequence. Validate data at startup in development builds.
+19. Performance budgets and browser compatibility
+19.1 Performance philosophy
+Frame-time stability is part of the graphics. A beautiful 40–55 FPS experience with stutter feels cheaper than a slightly simpler stable 60 FPS presentation. Profile CPU and GPU separately and budget spectacle as temporary spikes, not permanent cost.
+Budget area
+Initial target
+Frame rate
+60 FPS target on target desktop hardware; graceful 30–60 behavior on weaker systems.
+Simulation
+Fixed tick; keep gameplay/physics comfortably below total frame budget.
+Draw calls
+Use instancing/merging for city repetition; preserve headroom for finale.
+Dynamic lights/shadows
+Very limited hero set.
+Particles
+GPU-friendly / instanced; cap counts per quality tier.
+Texture memory
+Use compressed textures and sane maximum dimensions; avoid unique 4K textures for every surface.
+Echo count
+3–5 in shipping puzzles unless profiling proves more is safe.
+Load strategy
+Preload near-term critical assets; stream/defer later chapter audio or optional content where practical.
+
+19.2 WebGPU / WebGL 2
+Three.js WebGPURenderer is designed to target WebGPU with WebGL 2 fallback, but renderer features and effect compatibility must be tested. Keep the “safe” visual path visually intentional. WebGPU requires HTTPS/secure context and remains limited availability according to MDN as of September 2026.
+19.3 Adaptive quality
+Measure rolling frame time, not instantaneous FPS.
+Reduce internal resolution before deleting core lighting identity.
+Then reduce AO/shadow/reflection quality.
+Then reduce particle density / secondary effects.
+Never disable mechanic readability effects.
+20. Testing, telemetry, QA and failure recovery
+20.1 Automated testing targets
+Math tests for perspective projection / scale calculations.
+Serialization tests for timeline event tracks.
+State-machine tests for puzzle reset/completion.
+Checkpoint schema and migration tests.
+Input binding tests where practical.
+Asset/data validation in CI.
+20.2 Manual QA matrix
+Area
+Cases
+Movement
+Slopes, edges, stairs, moving/rotating surfaces, gravity transitions, low FPS.
+Scale
+Min/max sizes, occlusion, invalid sockets, collision overlap, repeated reset.
+Echo
+Multiple resets, interrupted events, object divergence, clearing Echoes, checkpoint reload.
+Browser
+Primary Chrome/Edge, fallback browser path, WebGPU off, WebGL 2 forced, resize/fullscreen-like window changes.
+Audio
+Muted start, denied/late audio context start, tab focus changes.
+Progression
+Every checkpoint, death/fall restore, restart, settings persistence.
+
+20.3 Debug overlay
+Developer toggle should expose FPS/frame time, renderer backend, draw calls, triangles, memory indicators available from Three.js, physics body/collider counts, current gravity vector, timeline tick, Echo count, active chapter/puzzle IDs and dynamic-resolution scale. Add world gizmos for ScaleAnchors, GravityAnchors and Temporal Zones.
+21. Production scope, milestones and Definition of Done
+21.1 Shipping scope
+Must ship
+Nice if cheap
+Do NOT build for v1
+Opening chamber + sphere crossing
+One optional secret chain
+Open world
+Scale mechanic + puzzle cluster
+Photo mode
+Combat system
+Gravity mechanic + puzzle cluster
+Speedrun timer after first clear
+Enemy AI ecosystem
+Echo mechanic + puzzle cluster
+Second ending line / choice
+Procedural infinite worlds
+Combined final puzzle
+Additional Echo visual variants
+Multiplayer
+Cinematic collapse + ending
+One more quality preset
+User-generated content
+Settings/checkpoints/reset
+Small achievements
+Inventory/crafting
+
+21.2 Milestones
+Milestone
+Exit criteria
+M0 — Technical spike
+Renderer boots; physics boots; movement works; performance overlay visible.
+M1 — First minute
+White Chamber and sphere crossing look/feel excellent; no placeholder-level movement.
+M2 — Scale vertical slice
+Scale mechanic robust, one real puzzle, local reset, visual/audio feedback.
+M3 — Gravity vertical slice
+Local-up traversal robust, authored transformation, no camera nausea blockers.
+M4 — Echo vertical slice
+Deterministic short recording, 2+ Echo puzzle, reset safe.
+M5 — Synthesis
+Combined puzzle playable start-to-finish.
+M6 — Narrative + finale
+Correction events, collapse, final reveal, credits.
+M7 — Ship
+Performance tiers, browser QA, no progression blockers, deployment build.
+
+21.3 Definition of Done for a mechanic
+Player can discover it without developer explanation.
+It has one isolated puzzle and one later combined use.
+It has clear success, failure and invalid-action feedback.
+It survives checkpoint/restart and low-frame-rate testing.
+Debug visualization exists.
+No known progression blocker.
+Performance cost is measured.
+Code has a stable interface and no obvious temporary hacks in the golden path.
+22. Astra / Codex execution strategy and prompt pack
+Use the strongest coding model for repository-wide architecture, difficult graphics/physics systems and cross-file debugging. Do not spend premium usage on story brainstorming, renaming variables or tiny CSS changes that cheaper/faster models can handle.
+22.1 Agent operating rules
+MANDATORY AGENT RULENever expand scope while an existing mechanic is broken. A smaller finished experience is more important than a larger unfinished game.
+
+Inspect the repository before changing architecture.
+Keep the game runnable after each meaningful batch.
+Run build/typecheck/tests after changes.
+For visual systems, expose tunable parameters instead of burying magic numbers.
+Do not claim “fixed” without reproducing and validating when possible.
+Prefer procedural placeholders that match the intended art direction over random asset-pack content.
+Before a risky refactor, explain what contract remains stable.
+If a requested feature threatens the shipping scope, propose the minimal version first.
+22.2 Recommended usage windows
+Window
+High-value focus
+Window A
+Repo foundation + movement + renderer + opening chamber + sphere transition.
+Window B
+Perspective Scale system + one complete puzzle + polish.
+Window C
+Gravity system + rotating world-group sequence + comfort fixes.
+Window D
+Echo recorder/playback + Temporal Zone puzzle + deterministic reset.
+Window E
+Combined puzzle + Curator correction + finale integration.
+Window F
+Profiling, browser fallback, bug purge, build/deploy hardening.
+
+22.3 Master project prompt
+You are the lead gameplay engineer, graphics engineer and technical designer for INFINITUM: THE LAST SCALE, a short premium-feeling first-person 3D browser game. The project is TypeScript + Three.js + Vite + Rapier + Web Audio. The game is deliberately NOT an open world. It is a 15–30 minute authored experience built around one transforming megaspace and three reality mechanics: Perspective Scale, Gravity Reorientation and Temporal Echoes.Your priorities, in order: (1) keep the project runnable, (2) preserve premium movement and visual quality, (3) implement robust mechanic contracts, (4) build a complete golden path, (5) optimize only from measured evidence. Never expand scope while an existing golden-path mechanic is broken.Before major work: inspect the repository, summarize relevant architecture, identify the smallest safe implementation, then implement. After work: run typecheck/build/tests, reproduce the mechanic, fix errors, report changed files, known limitations and the next highest-value step. Do not invent compatibility claims. Keep WebGPU/WebGL fallback concerns explicit. Use fixed-tick gameplay/physics where appropriate and keep rendering separate from gameplay state.The shipped experience must include: White Chamber, seamless sphere crossing, Scale puzzle, Gravity puzzle, Echo puzzle, combined three-rule lock, Curator correction sequence, cinematic collapse, final reveal, settings, checkpoints and local puzzle resets. Anything else is optional.When a visual effect can be achieved by transforming existing geometry/material state instead of building a new level, prefer the transformation. The project should feel enormous while remaining compact.
+22.4 Stage prompt template
+TASK: [single milestone]SUCCESS CRITERIA: [observable player-facing outcome]CONSTRAINTS: do not begin later milestones; do not replace working systems unless necessary; preserve build.PROCESS: inspect -> plan briefly -> implement -> run -> test -> profile if relevant -> fix -> summarize.REQUIRED DEBUGGING: add any gizmo/metric needed to verify the new system.STOP CONDITION: when success criteria are met and the project is runnable.
+22.5 First Astra prompt
+Give the master prompt plus this first task: initialize/inspect the repo, create the renderer abstraction, Rapier boot, input system, premium first-person controller, debug overlay and a visually authored White Chamber. End with a working development build. Do not implement Scale/Gravity/Echo yet. Then iterate on movement and opening visuals before moving on.
+23. Risk register and fallback designs
+Risk
+Impact
+Mitigation / fallback
+WebGPURenderer feature gap
+High
+Keep renderer/effect abstraction; validate early; force WebGL 2 test path.
+Perspective scaling feels buggy
+High
+Use authored anchors/sockets and bounded transforms rather than arbitrary scaling.
+Changing gravity causes nausea
+High
+World-group rotation + stable camera; reduced motion mode; fewer forced rolls.
+Echo physics diverges
+High
+Drive Echo body path from recordings; semantic events; tolerant puzzle sockets.
+Visual scope explodes
+High
+Reuse megaspace; strict must/nice/do-not-build table.
+Agent creates monolithic code
+Medium
+Enforce module boundaries and file-size/ownership review after milestones.
+Performance collapses in finale
+High
+Build finale budget prototype early; instancing; quality degradation order.
+Puzzles are unclear
+High
+Playtest without explanation; layered hint system; instrument reset/stall points.
+Art looks like generic tech demo
+High
+Restrained palette/shape bible; ban default cyberpunk treatment; hero lighting pass.
+Browser reload loses progress
+Medium
+Small local checkpoint schema; deterministic chapter rebuild.
+
+23.1 Scope cut order if time/credits are tight
+Cut optional secrets.
+Reduce number of puzzle rooms while preserving one strong example per mechanic.
+Simplify Curator correction sequence.
+Reduce finale length, not the reveal.
+Reduce quality tiers to High + Safe.
+Do NOT cut local reset/checkpoints, the three core mechanics, combined puzzle, or ending.
+24. Deployment, release checklist and post-launch options
+24.1 Build/deploy
+Use Vite for development and production bundling. As of 2026, Vite 8.x is current; pin exact dependency versions in the project lockfile rather than relying on floating latest versions. Deploy over HTTPS because WebGPU requires a secure context. Configure immutable caching for hashed assets and short/no-cache behavior for the HTML entry.
+24.2 Release checklist
+Production build passes with zero TypeScript errors.
+Golden path completed from a fresh browser profile.
+WebGPU path tested on supported hardware.
+Forced WebGL 2 / safe path tested.
+No progression blocker after reload at each checkpoint.
+Audio begins only after appropriate user gesture.
+Settings persist and can be reset.
+Performance overlay disabled by default in production.
+Source maps policy decided.
+Compression/cache headers verified.
+404/fallback routing configured if hosted as SPA.
+Credits/license notices include third-party assets/libraries.
+Final browser memory/CPU/GPU profiling pass completed.
+24.3 Post-launch expansion that preserves identity
+If the first release works, expand by adding a second compact chapter with a new relationship between the existing rules before adding a fourth core mechanic. Possible directions: Echoes that preserve a different gravity frame; a Curator space where scale anchors move; community speedrun timing; photo mode; alternate final interpretation. A Steam/native port should follow evidence of audience demand, not precede the browser proof-of-concept.
+Appendix A — Suggested core interfaces / data contracts
+Contract
+Purpose
+StableEntityId
+string or integer assigned by authored content / runtime registry; never depend on Three.js object UUID for saved semantic identity.
+GravityFrame
+{ up: Vec3, sourceAnchorId?: StableEntityId, transitionSeconds: number }
+ScaleCommit
+{ entityId, anchorId, fromTransform, toTransform, tick }
+TimelineEvent
+{ tick, type, entityId?, payload }
+TransformSample
+{ tick, position, rotation, locomotionFlags }
+CheckpointState
+{ version, chapterId, solvedPuzzleIds, secretIds, settingsRef }
+ChapterDefinition
+{ id, spawn, lightingState, activeGroups, checkpointId, objectiveKey, transitionId }
+
+Appendix B — Naming conventions
+Classes/systems: PascalCase (ScaleManipulationSystem).
+Runtime instances/variables: camelCase.
+Stable content IDs: lowercase dot notation (city.scale.bridge01).
+Events: past-tense or fact-like semantic names (ScaleCommitted, PuzzleSolved).
+Booleans: is/has/can prefix.
+Avoid generic “Manager” when a narrower responsibility name exists; EchoManager is acceptable only if it truly owns Echo lifetime, not recording, rendering and puzzles all at once.
+Appendix C — Debug commands / dev toggles
+Command / toggle
+Behavior
+dev.stats
+Frame time, backend, draw calls, physics counts.
+dev.gizmos.scale
+Show ScaleAnchors / bounds / target compatibility.
+dev.gizmos.gravity
+Show local up vectors and Gravity Anchors.
+dev.gizmos.echo
+Show Temporal Zone bounds, tick and playback track.
+dev.chapter <id>
+Jump to chapter in development build.
+dev.checkpoint.reset
+Clear current checkpoint / rebuild chapter.
+dev.renderer.webgl
+Force WebGL 2 path if supported by renderer abstraction.
+dev.quality <tier>
+Switch preset immediately for profiling.
+
+Appendix D — Content checklist per puzzle room
+Clear entry view and destination.
+One visual clue demonstrating the active rule.
+Mechanic-valid geometry and anchors.
+Success state.
+Invalid-action feedback.
+Local reset.
+Fall/out-of-bounds recovery.
+Audio state.
+Lighting state.
+Hint triggers.
+Debug gizmos.
+Checkpoint interaction if applicable.
+Performance test under worst-case camera angle.
+Appendix E — Current technology notes (September 2026)
+The following notes are included to keep the build plan aligned with current official documentation. Pin and verify actual package versions when initializing the repo; the game bible intentionally specifies architecture more strongly than exact versions.
+Three.js WebGPURenderer: Three.js documents WebGPURenderer as its next-generation renderer. It targets WebGPU by default and can fall back to a WebGL 2 backend. Three.js also notes that it remains experimental and that ShaderMaterial/onBeforeCompile and the old EffectComposer workflow require migration to node materials/TSL and the newer post-processing approach. Source: Three.js WebGPURenderer manual
+WebGPU: MDN describes WebGPU as limited availability and secure-context-only. Source: MDN WebGPU API
+Rapier: Rapier provides JavaScript/WASM 3D physics and a kinematic character controller with obstacle sliding, slopes, stairs, moving-platform support and configurable up vector. Source: Rapier JavaScript character controller
+Vite: Vite 8.1 was announced in June 2026. Use a pinned release and lockfile when the project is initialized. Source: Vite 8.1 announcement
+Appendix F — Final “ship or stop” checklist
+☐ The first 60 seconds are polished enough to share.
+☐ The sphere transition is seamless and reliable.
+☐ Scale is readable and cannot soft-lock the golden path.
+☐ Gravity feels good and has a reduced-motion path.
+☐ Echo recording/playback is stable across repeated resets.
+☐ The final puzzle uses all three rules without introducing a fourth.
+☐ The finale reuses earlier spaces/assets in a surprising way.
+☐ The ending is implemented, not merely storyboarded.
+☐ Every chapter can recover from fall/reload/reset.
+☐ High and Safe graphics paths are tested.
+☐ A complete new player can finish without developer guidance.
+☐ Performance has been measured on target hardware.
+THE FINAL PRODUCTION TESTIf a new feature does not strengthen wonder, mechanic mastery, narrative escalation, or completion reliability, it probably does not belong in version 1.
+

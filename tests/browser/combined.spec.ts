@@ -1,0 +1,22 @@
+import { test, expect } from '@playwright/test';
+test('the lock requires Echo, then gravity, then perspective, and correction moves the exit', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto('/'); await expect(page.locator('#play')).toBeEnabled(); await page.locator('#play').click();
+  await page.evaluate(() => { const g = (window as any).__game; g.director.load(4); g.player.teleport(g.player.position.clone().set(7.4, .86, -4)); });
+  await page.waitForTimeout(200); await page.keyboard.press('KeyE'); await page.waitForTimeout(200);
+  expect(await page.evaluate(() => (window as any).__game.player.up.y)).toBe(1);
+  await page.keyboard.press('KeyQ'); await page.waitForTimeout(250);
+  await page.evaluate(() => { const g = (window as any).__game; g.player.teleport(g.player.position.clone().set(-5, .86, 1)); });
+  await page.waitForTimeout(500); await page.keyboard.press('KeyR'); await page.waitForTimeout(900);
+  expect(await page.evaluate(() => (window as any).__game.director.level.echo.echoes.length)).toBe(1);
+  await page.keyboard.press('KeyE');
+  await expect.poll(() => page.evaluate(() => (window as any).__game.player.up.x)).toBe(-1);
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => { const g = (window as any).__game; g.player.teleport(g.player.position.clone().set(8.65, 12, -2.5), g.player.up.clone().set(-1, 0, 0)); });
+  await page.waitForTimeout(300); await page.keyboard.press('KeyQ'); await page.waitForTimeout(150); await page.keyboard.press('KeyE');
+  await expect.poll(() => page.evaluate(() => (window as any).__game.director.level.scale.committed)).toBe(true);
+  await page.waitForTimeout(2700);
+  expect(await page.evaluate(() => (window as any).__game.director.level.gateRing.position.y)).toBe(17);
+  await page.screenshot({ path: 'test-results/combined-lock.png' });
+  expect(errors).toEqual([]);
+});

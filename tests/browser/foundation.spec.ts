@@ -1,0 +1,21 @@
+import { test, expect } from '@playwright/test';
+test('opening renders, movement collides, jump lands, pause and resize work', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  page.on('console', m => { if (m.type() === 'error' && !m.location().url.includes('favicon')) errors.push(m.text() + ' ' + m.location().url); });
+  await page.goto('/'); await expect(page.locator('#play')).toBeEnabled();
+  await page.waitForTimeout(2500); await page.screenshot({ path: 'test-results/chamber-menu.png' });
+  await page.locator('#play').click(); await expect(page.locator('#hud')).toBeVisible();
+  await page.waitForTimeout(500);
+  const start = await page.evaluate(() => (window as any).__game.player.position.z);
+  await page.keyboard.down('KeyW'); await page.waitForTimeout(2200); await page.keyboard.up('KeyW');
+  expect(await page.evaluate(() => (window as any).__game.player.position.z)).toBeLessThan(start - 4);
+  await page.keyboard.press('Space'); await page.waitForTimeout(180);
+  expect(await page.evaluate(() => (window as any).__game.player.position.y)).toBeGreaterThan(1.2);
+  await page.waitForTimeout(1400);
+  expect(await page.evaluate(() => (window as any).__game.player.grounded)).toBe(true);
+  await page.screenshot({ path: 'test-results/chamber-play.png' });
+  await page.keyboard.press('Escape'); await expect(page.locator('#menu')).toBeVisible();
+  await page.setViewportSize({ width: 1024, height: 768 }); await page.waitForTimeout(200);
+  expect(await page.evaluate(() => (window as any).__game.render.camera.aspect)).toBeCloseTo(1024 / 768);
+  expect(errors).toEqual([]);
+});

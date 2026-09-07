@@ -1,0 +1,9 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+artifacts/
+*.blend1
+assets/blender/Untitled.blend
+*.log
+.DS_Store
